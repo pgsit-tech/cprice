@@ -8,9 +8,9 @@
 - **平台**: Cloudflare Pages
 
 ### 🔧 后端API域名
-- **生产环境**: `cprice-api.20990909.xyz`
-- **开发环境**: `cprice-api-dev.20990909.xyz`
-- **当前临时域名**: `https://cprice-api.itsupport-5c8.workers.dev`
+- **生产环境**: `cprice-api.20990909.xyz` (主Worker: cprice-api)
+- **开发环境**: `cprice-api-dev.20990909.xyz` (开发Worker: cprice-api-dev)
+- **默认域名**: `https://cprice-api.itsupport-5c8.workers.dev`
 - **平台**: Cloudflare Workers
 
 ---
@@ -92,20 +92,17 @@ TTL: 自动或300秒
 # 主环境CORS配置
 CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev,https://cprice.pgs-log.cn"
 
+# 主生产环境自定义域名配置
+[[routes]]
+pattern = "cprice-api.20990909.xyz"
+custom_domain = true
+
 # 开发环境
 [env.development]
 name = "cprice-api-dev"
 vars = { CORS_ORIGIN = "http://localhost:3000,https://cprice.pgs-log.cn" }
 [[env.development.routes]]
 pattern = "cprice-api-dev.20990909.xyz"
-custom_domain = true
-
-# 生产环境
-[env.production]
-name = "cprice-api-prod"
-vars = { CORS_ORIGIN = "https://cprice.pages.dev,https://cprice.pgs-log.cn" }
-[[env.production.routes]]
-pattern = "cprice-api.20990909.xyz"
 custom_domain = true
 ```
 

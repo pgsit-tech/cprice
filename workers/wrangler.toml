@@ -31,17 +31,7 @@ database_id = "9a8f1cea-083f-4cd7-910f-36e9b3306a85"
 pattern = "cprice-api-dev.20990909.xyz"
 custom_domain = true
 
-# 生产环境配置
-[env.production]
-name = "cprice-api-prod"
-vars = { CORS_ORIGIN = "https://cprice.pages.dev,https://cprice.pgs-log.cn" }
-
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "cprice-db"
-database_id = "579d5345-563e-42c2-b3d4-ea442daac58e"
-
-# 自定义域名配置
-[[env.production.routes]]
+# 主生产环境自定义域名配置（直接在主配置中）
+[[routes]]
 pattern = "cprice-api.20990909.xyz"
 custom_domain = true
