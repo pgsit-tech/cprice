@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # 环境变量
 [vars]
-CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev"
+CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev,http://192.168.1.5:3000,https://f2ba0e10.cprice.pages.dev"
 
 # 生产环境密钥（需要通过wrangler secret命令设置）
 # wrangler secret put JWT_SECRET
@@ -14,28 +14,24 @@ CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev"
 [[d1_databases]]
 binding = "DB"
 database_name = "cprice-db"
-database_id = "your-database-id-here"
+database_id = "579d5345-563e-42c2-b3d4-ea442daac58e"
 
 # 开发环境配置
 [env.development]
 name = "cprice-api-dev"
-
-[env.development.vars]
-CORS_ORIGIN = "http://localhost:3000"
+vars = { CORS_ORIGIN = "http://localhost:3000" }
 
 [[env.development.d1_databases]]
 binding = "DB"
 database_name = "cprice-db-dev"
-database_id = "your-dev-database-id-here"
+database_id = "9a8f1cea-083f-4cd7-910f-36e9b3306a85"
 
 # 生产环境配置
 [env.production]
-name = "cprice-api"
-
-[env.production.vars]
-CORS_ORIGIN = "https://cprice.pages.dev"
+name = "cprice-api-prod"
+vars = { CORS_ORIGIN = "https://cprice.pages.dev" }
 
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "cprice-db"
-database_id = "your-prod-database-id-here"
+database_id = "579d5345-563e-42c2-b3d4-ea442daac58e"

@@ -28,7 +28,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const response = await fetch('/api/dashboard', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/dashboard`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -52,7 +53,8 @@ export default function DashboardPage() {
   const handleClaimInquiry = async (inquiryId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/dashboard/claim-inquiry/${inquiryId}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/dashboard/claim-inquiry/${inquiryId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -74,7 +76,8 @@ export default function DashboardPage() {
   const handleUpdateInquiryStatus = async (inquiryId: string, status: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/dashboard/inquiry/${inquiryId}/status`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/dashboard/inquiry/${inquiryId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

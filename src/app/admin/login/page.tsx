@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Link from 'next/link';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const loginSchema = z.object({
@@ -32,7 +33,8 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,12 +160,12 @@ export default function LoginPage() {
         </div>
         
         <div className="text-center">
-          <a
+          <Link
             href="/"
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
             ← 返回首页
-          </a>
+          </Link>
         </div>
       </div>
     </div>

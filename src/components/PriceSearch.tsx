@@ -28,7 +28,8 @@ export default function PriceSearch({ businessTypes }: PriceSearchProps) {
       if (searchForm.origin) params.append('origin', searchForm.origin);
       if (searchForm.destination) params.append('destination', searchForm.destination);
 
-      const response = await fetch(`/api/public/prices?${params.toString()}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/public/prices?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setSearchResults(data.data?.data || []);

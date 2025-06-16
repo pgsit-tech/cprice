@@ -16,7 +16,8 @@ export default function Home() {
 
   const fetchBusinessTypes = async () => {
     try {
-      const response = await fetch('/api/public/business-types');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/public/business-types`);
       if (response.ok) {
         const data = await response.json();
         setBusinessTypes(data.data || []);

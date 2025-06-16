@@ -7,7 +7,7 @@ import {
   HomeIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
-  SpeakerphoneIcon,
+  MegaphoneIcon,
   TagIcon,
   UserGroupIcon,
   Bars3Icon,
@@ -24,7 +24,7 @@ const navigation = [
   { name: '仪表板', href: '/admin/dashboard', icon: HomeIcon },
   { name: '价格管理', href: '/admin/prices', icon: CurrencyDollarIcon },
   { name: '咨询管理', href: '/admin/inquiries', icon: DocumentTextIcon },
-  { name: '公告管理', href: '/admin/announcements', icon: SpeakerphoneIcon },
+  { name: '公告管理', href: '/admin/announcements', icon: MegaphoneIcon },
   { name: '业务类型', href: '/admin/business-types', icon: TagIcon },
   { name: '用户管理', href: '/admin/users', icon: UserGroupIcon },
 ];

@@ -49,7 +49,8 @@ export default function InquiryForm({ businessTypes }: InquiryFormProps) {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/public/inquiries', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+      const response = await fetch(`${apiUrl}/api/public/inquiries`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
