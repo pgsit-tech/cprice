@@ -1,0 +1,31 @@
+{
+  "name": "cprice-api",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers API for cprice logistics pricing system",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler deploy --dry-run",
+    "db:init": "wrangler d1 execute cprice-db --file=../database/schema.sql",
+    "db:migrate": "wrangler d1 migrations apply cprice-db",
+    "db:backup": "wrangler d1 export cprice-db --output=backup.sql"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "wrangler": "^3.28.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "api",
+    "logistics",
+    "pricing"
+  ],
+  "author": "cprice team",
+  "license": "MIT"
+}
