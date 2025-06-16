@@ -3,8 +3,8 @@
 ## 📋 域名配置概览
 
 ### 🌐 前端域名
-- **自定义域名**: `cprice.pgs-log.cn`
-- **当前临时域名**: `https://76293640.cprice.pages.dev`
+- **自定义域名**: `cprice.pgs-log.cn` ✅ 已配置生效
+- **默认域名**: `https://cprice.pages.dev`
 - **平台**: Cloudflare Pages
 
 ### 🔧 后端API域名
@@ -64,9 +64,11 @@ Cloudflare会自动为自定义域名提供SSL证书，通常需要几分钟到�
 ```
 类型: CNAME
 名称: cprice (或 @，如果是根域名)
-值: 76293640.cprice.pages.dev
+值: cprice.pages.dev
 TTL: 自动或300秒
 ```
+
+**状态**: ✅ 已配置完成并生效
 
 ### 2. Cloudflare Pages 域名绑定
 
@@ -88,7 +90,7 @@ TTL: 自动或300秒
 #### Workers配置 (wrangler.toml)
 ```toml
 # 主环境CORS配置
-CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev,http://192.168.1.5:3000,https://f2ba0e10.cprice.pages.dev,https://8d62dc62.cprice.pages.dev,https://cprice.pgs-log.cn"
+CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev,https://cprice.pgs-log.cn"
 
 # 开发环境
 [env.development]

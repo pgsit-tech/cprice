@@ -9,12 +9,15 @@
 ## 📍 部署地址
 
 ### 🌐 前端 (Cloudflare Pages)
-- **生产地址**: https://8d62dc62.cprice.pages.dev
+- **自定义域名**: https://cprice.pgs-log.cn ✅ 已配置生效
+- **默认域名**: https://cprice.pages.dev
 - **状态**: ✅ 正常运行
 - **功能**: 完整的前端界面，包括公开查询和管理后台
 
 ### 🔧 后端 API (Cloudflare Workers)
-- **API地址**: https://cprice-api.itsupport-5c8.workers.dev
+- **自定义域名**: https://cprice-api.20990909.xyz (配置中)
+- **开发环境**: https://cprice-api-dev.20990909.xyz ✅ 已配置生效
+- **默认域名**: https://cprice-api.itsupport-5c8.workers.dev
 - **状态**: ✅ 正常运行
 - **健康检查**: https://cprice-api.itsupport-5c8.workers.dev/health
 
@@ -31,7 +34,7 @@
 - **用户名**: `admin`
 - **密码**: `admin123`
 - **权限**: 所有模块的完整权限
-- **登录地址**: https://8d62dc62.cprice.pages.dev/admin/login/
+- **登录地址**: https://cprice.pgs-log.cn/admin/login/ 或 https://cprice.pages.dev/admin/login/
 
 ---
 
