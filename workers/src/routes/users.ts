@@ -336,34 +336,34 @@ userRoutes.post('/:id/reset-password', async (c) => {
     const authHeader = c.req.header('Authorization');
     const token = authHeader?.substring(7);
     const payload = await verify(token!, c.env.JWT_SECRET);
-    
+
     if (!hasPermission(payload.permissions, 'users', 'update')) {
       return c.json({ success: false, error: 'Permission denied' }, 403);
     }
-    
+
     const id = c.req.param('id');
     const { newPassword } = await c.req.json();
-    
+
     if (!newPassword) {
       return c.json({ success: false, error: 'New password is required' }, 400);
     }
-    
+
     // 检查用户是否存在
     const user = await c.env.DB.prepare(`
       SELECT id FROM users WHERE id = ? AND is_active = 1
     `).bind(id).first();
-    
+
     if (!user) {
       return c.json({ success: false, error: 'User not found' }, 404);
     }
-    
+
     const passwordHash = await hashPassword(newPassword);
-    
+
     const result = await c.env.DB.prepare(`
       UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(passwordHash, id).run();
-    
+
     if (result.success) {
       return c.json({ success: true, message: 'Password reset successfully' });
     } else {
@@ -372,5 +372,136 @@ userRoutes.post('/:id/reset-password', async (c) => {
   } catch (error) {
     console.error('Error resetting password:', error);
     return c.json({ success: false, error: 'Failed to reset password' }, 500);
+  }
+});
+
+// 批量导入用户
+userRoutes.post('/batch-import', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const token = authHeader?.substring(7);
+    const payload = await verify(token!, c.env.JWT_SECRET);
+
+    if (!hasPermission(payload.permissions, 'users', 'create')) {
+      return c.json({ success: false, error: 'Permission denied' }, 403);
+    }
+
+    const formData = await c.req.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return c.json({ success: false, error: 'No file uploaded' }, 400);
+    }
+
+    const text = await file.text();
+    const lines = text.split('\n').filter(line => line.trim());
+
+    if (lines.length < 2) {
+      return c.json({ success: false, error: 'File must contain at least header and one data row' }, 400);
+    }
+
+    // 跳过标题行
+    const dataLines = lines.slice(1);
+
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const line = dataLines[i].trim();
+      if (!line) continue;
+
+      try {
+        // 解析CSV行（简单实现，假设没有复杂的引号处理）
+        const columns = line.split(',').map(col => col.replace(/^"|"$/g, '').trim());
+
+        if (columns.length < 5) {
+          errors.push(`第${i + 2}行: 列数不足`);
+          failedCount++;
+          continue;
+        }
+
+        const [username, email, password, role, isActiveStr, permissionIds] = columns;
+
+        // 验证必填字段
+        if (!username || !email || !password) {
+          errors.push(`第${i + 2}行: 用户名、邮箱、密码不能为空`);
+          failedCount++;
+          continue;
+        }
+
+        // 验证角色
+        if (!['admin', 'user'].includes(role)) {
+          errors.push(`第${i + 2}行: 角色必须是 admin 或 user`);
+          failedCount++;
+          continue;
+        }
+
+        // 验证邮箱格式
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          errors.push(`第${i + 2}行: 邮箱格式不正确`);
+          failedCount++;
+          continue;
+        }
+
+        // 检查用户名和邮箱是否已存在
+        const existingUser = await c.env.DB.prepare(`
+          SELECT id FROM users WHERE username = ? OR email = ?
+        `).bind(username, email).first();
+
+        if (existingUser) {
+          errors.push(`第${i + 2}行: 用户名或邮箱已存在`);
+          failedCount++;
+          continue;
+        }
+
+        // 创建用户
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const passwordHash = await hashPassword(password);
+        const isActive = isActiveStr.toLowerCase() === 'true';
+
+        const userResult = await c.env.DB.prepare(`
+          INSERT INTO users (id, username, email, password_hash, role, is_active)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(userId, username, email, passwordHash, role, isActive ? 1 : 0).run();
+
+        if (!userResult.success) {
+          errors.push(`第${i + 2}行: 创建用户失败`);
+          failedCount++;
+          continue;
+        }
+
+        // 分配权限
+        if (permissionIds && permissionIds.trim()) {
+          const permissions = permissionIds.split(',').map(id => id.trim()).filter(id => id);
+          for (const permissionId of permissions) {
+            await c.env.DB.prepare(`
+              INSERT INTO user_permissions (user_id, permission_id)
+              VALUES (?, ?)
+            `).bind(userId, permissionId).run();
+          }
+        }
+
+        successCount++;
+
+      } catch (error) {
+        errors.push(`第${i + 2}行: 处理失败 - ${error.message}`);
+        failedCount++;
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        success: successCount,
+        failed: failedCount,
+        errors: errors.slice(0, 10) // 最多返回10个错误
+      }
+    });
+
+  } catch (error) {
+    console.error('Error batch importing users:', error);
+    return c.json({ success: false, error: 'Failed to import users' }, 500);
   }
 });
