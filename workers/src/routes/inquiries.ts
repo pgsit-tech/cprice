@@ -2,6 +2,22 @@ import { Hono } from 'hono';
 import { verify } from 'hono/jwt';
 import { Env } from '../index';
 
+// CSV导出辅助函数
+function generateCSV(data: any[], headers: string[]): string {
+  const csvHeaders = headers.join(',');
+  const csvRows = data.map(row =>
+    headers.map(header => {
+      const value = row[header] || '';
+      // 处理包含逗号、引号或换行符的值
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    }).join(',')
+  );
+  return [csvHeaders, ...csvRows].join('\n');
+}
+
 export const inquiryRoutes = new Hono<{ Bindings: Env }>();
 
 // 检查权限的辅助函数

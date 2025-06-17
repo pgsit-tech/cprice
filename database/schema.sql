@@ -101,6 +101,15 @@ CREATE TABLE announcements (
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
+-- 系统设置表
+CREATE TABLE system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'string' CHECK (type IN ('string', 'number', 'boolean', 'json')),
+    description TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 创建索引
 CREATE INDEX idx_prices_business_type ON prices(business_type_id);
 CREATE INDEX idx_prices_origin_destination ON prices(origin, destination);
@@ -152,3 +161,13 @@ INSERT INTO users (id, username, email, password_hash, role) VALUES
 -- 为管理员分配所有权限
 INSERT INTO user_permissions (user_id, permission_id)
 SELECT 'user_001', id FROM permissions;
+
+-- 默认系统设置
+INSERT INTO system_settings (key, value, type, description) VALUES
+('system_name', 'CPrice 物流价格系统', 'string', '系统名称'),
+('system_subtitle', '专业的货运代理物流服务平台', 'string', '系统副标题'),
+('system_logo', '', 'string', '系统图标URL'),
+('footer_text', '© 2024 CPrice 物流. 保留所有权利.', 'string', '页脚文本'),
+('contact_email', 'contact@cprice.com', 'string', '联系邮箱'),
+('contact_phone', '400-123-4567', 'string', '联系电话'),
+('company_address', '中国上海市浦东新区', 'string', '公司地址');

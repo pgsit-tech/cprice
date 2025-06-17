@@ -288,18 +288,18 @@ priceRoutes.delete('/:id', async (c) => {
     const authHeader = c.req.header('Authorization');
     const token = authHeader?.substring(7);
     const payload = await verify(token!, c.env.JWT_SECRET);
-    
+
     if (!hasPermission(payload.permissions, 'prices', 'delete')) {
       return c.json({ success: false, error: 'Permission denied' }, 403);
     }
-    
+
     const id = c.req.param('id');
-    
+
     const result = await c.env.DB.prepare(`
       UPDATE prices SET is_active = 0, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND is_active = 1
     `).bind(id).run();
-    
+
     if (result.success && result.changes > 0) {
       return c.json({ success: true, message: 'Price deleted successfully' });
     } else {
@@ -308,5 +308,200 @@ priceRoutes.delete('/:id', async (c) => {
   } catch (error) {
     console.error('Error deleting price:', error);
     return c.json({ success: false, error: 'Failed to delete price' }, 500);
+  }
+});
+
+// 导出价格数据
+priceRoutes.get('/export/data', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const token = authHeader?.substring(7);
+    const payload = await verify(token!, c.env.JWT_SECRET);
+
+    if (!hasPermission(payload.permissions, 'prices', 'export')) {
+      return c.json({ success: false, error: 'Permission denied' }, 403);
+    }
+
+    const { businessType, origin, destination, priceType, format = 'csv' } = c.req.query();
+
+    let query = `
+      SELECT p.*, bt.name as business_type_name, bt.code as business_type_code,
+             u.username as created_by_name
+      FROM prices p
+      LEFT JOIN business_types bt ON p.business_type_id = bt.id
+      LEFT JOIN users u ON p.created_by = u.id
+      WHERE p.is_active = 1
+    `;
+
+    const params: any[] = [];
+
+    if (businessType) {
+      query += ` AND p.business_type_id = ?`;
+      params.push(businessType);
+    }
+
+    if (origin) {
+      query += ` AND p.origin LIKE ?`;
+      params.push(`%${origin}%`);
+    }
+
+    if (destination) {
+      query += ` AND p.destination LIKE ?`;
+      params.push(`%${destination}%`);
+    }
+
+    if (priceType) {
+      query += ` AND p.price_type = ?`;
+      params.push(priceType);
+    }
+
+    query += ` ORDER BY p.created_at DESC`;
+
+    const result = await c.env.DB.prepare(query).bind(...params).all();
+
+    if (format === 'csv') {
+      // 生成CSV格式
+      const headers = [
+        'ID', '业务类型', '起始地', '目的地', '价格类型', '价格', '货币',
+        '单位', '生效日期', '失效日期', '描述', '创建者', '创建时间'
+      ];
+
+      let csv = headers.join(',') + '\n';
+
+      result.results?.forEach((price: any) => {
+        const row = [
+          price.id,
+          price.business_type_name,
+          price.origin,
+          price.destination,
+          price.price_type === 'cost' ? '成本价' : '对外价',
+          price.price,
+          price.currency,
+          price.unit,
+          price.valid_from,
+          price.valid_to || '',
+          price.description || '',
+          price.created_by_name,
+          price.created_at
+        ];
+        csv += row.map(field => `"${field}"`).join(',') + '\n';
+      });
+
+      return new Response(csv, {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename="prices.csv"'
+        }
+      });
+    }
+
+    return c.json({ success: true, data: result.results });
+  } catch (error) {
+    console.error('Error exporting prices:', error);
+    return c.json({ success: false, error: 'Failed to export prices' }, 500);
+  }
+});
+
+// 批量导入价格数据
+priceRoutes.post('/import/data', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const token = authHeader?.substring(7);
+    const payload = await verify(token!, c.env.JWT_SECRET);
+
+    if (!hasPermission(payload.permissions, 'prices', 'create')) {
+      return c.json({ success: false, error: 'Permission denied' }, 403);
+    }
+
+    const { data: importData } = await c.req.json();
+
+    if (!Array.isArray(importData) || importData.length === 0) {
+      return c.json({ success: false, error: 'Invalid import data' }, 400);
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+
+    // 获取所有业务类型用于验证
+    const businessTypes = await c.env.DB.prepare(`
+      SELECT id, code FROM business_types WHERE is_active = 1
+    `).all();
+
+    const businessTypeMap = new Map();
+    businessTypes.results?.forEach((bt: any) => {
+      businessTypeMap.set(bt.code, bt.id);
+    });
+
+    for (let i = 0; i < importData.length; i++) {
+      const item = importData[i];
+
+      try {
+        // 验证必填字段
+        if (!item.businessTypeCode || !item.origin || !item.destination ||
+            !item.priceType || !item.price || !item.unit || !item.validFrom) {
+          results.failed++;
+          results.errors.push(`第${i + 1}行: 缺少必填字段`);
+          continue;
+        }
+
+        // 验证业务类型
+        const businessTypeId = businessTypeMap.get(item.businessTypeCode);
+        if (!businessTypeId) {
+          results.failed++;
+          results.errors.push(`第${i + 1}行: 无效的业务类型代码 ${item.businessTypeCode}`);
+          continue;
+        }
+
+        // 验证价格类型
+        if (!['cost', 'public'].includes(item.priceType)) {
+          results.failed++;
+          results.errors.push(`第${i + 1}行: 无效的价格类型 ${item.priceType}`);
+          continue;
+        }
+
+        // 验证价格
+        const price = parseFloat(item.price);
+        if (isNaN(price) || price <= 0) {
+          results.failed++;
+          results.errors.push(`第${i + 1}行: 无效的价格 ${item.price}`);
+          continue;
+        }
+
+        const id = `price_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        const result = await c.env.DB.prepare(`
+          INSERT INTO prices (
+            id, business_type_id, origin, destination, price_type, price,
+            currency, unit, valid_from, valid_to, description, created_by
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          id, businessTypeId, item.origin, item.destination, item.priceType, price,
+          item.currency || 'CNY', item.unit, item.validFrom, item.validTo || null,
+          item.description || null, payload.userId
+        ).run();
+
+        if (result.success) {
+          results.success++;
+        } else {
+          results.failed++;
+          results.errors.push(`第${i + 1}行: 数据库插入失败`);
+        }
+      } catch (error) {
+        results.failed++;
+        results.errors.push(`第${i + 1}行: ${error.message}`);
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: results,
+      message: `导入完成: 成功 ${results.success} 条，失败 ${results.failed} 条`
+    });
+  } catch (error) {
+    console.error('Error importing prices:', error);
+    return c.json({ success: false, error: 'Failed to import prices' }, 500);
   }
 });

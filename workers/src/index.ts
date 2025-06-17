@@ -8,6 +8,7 @@ import { announcementRoutes } from './routes/announcements';
 import { businessTypeRoutes } from './routes/business-types';
 import { userRoutes } from './routes/users';
 import { dashboardRoutes } from './routes/dashboard';
+import { settingsRoutes } from './routes/settings';
 
 export interface Env {
   DB: D1Database;
@@ -105,13 +106,32 @@ app.get('/init-db', async (c) => {
       `).bind('user_001', perm.id).run();
     }
 
+    // 插入默认系统设置
+    const defaultSettings = [
+      { key: 'system_name', value: 'CPrice 物流价格系统', type: 'string', description: '系统名称' },
+      { key: 'system_subtitle', value: '专业的货运代理物流服务平台', type: 'string', description: '系统副标题' },
+      { key: 'system_logo', value: '', type: 'string', description: '系统图标URL' },
+      { key: 'footer_text', value: '© 2024 CPrice 物流. 保留所有权利.', type: 'string', description: '页脚文本' },
+      { key: 'contact_email', value: 'contact@cprice.com', type: 'string', description: '联系邮箱' },
+      { key: 'contact_phone', value: '400-123-4567', type: 'string', description: '联系电话' },
+      { key: 'company_address', value: '中国上海市浦东新区', type: 'string', description: '公司地址' }
+    ];
+
+    for (const setting of defaultSettings) {
+      await c.env.DB.prepare(`
+        INSERT OR REPLACE INTO system_settings (key, value, type, description, updated_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).bind(setting.key, setting.value, setting.type, setting.description).run();
+    }
+
     return c.json({
       success: true,
       message: 'Database initialized successfully',
       data: {
         businessTypes: businessTypes.length,
         permissions: permissions.length,
-        adminUser: 1
+        adminUser: 1,
+        systemSettings: defaultSettings.length
       }
     });
   } catch (error) {
@@ -240,11 +260,41 @@ app.get('/api/public/business-types', async (c) => {
       WHERE is_active = 1
       ORDER BY name
     `).all();
-    
+
     return c.json({ success: true, data: result.results });
   } catch (error) {
     console.error('Error fetching business types:', error);
     return c.json({ success: false, error: 'Failed to fetch business types' }, 500);
+  }
+});
+
+// 获取公开系统设置
+app.get('/api/public/settings', async (c) => {
+  try {
+    const settings = await c.env.DB.prepare(`
+      SELECT key, value FROM system_settings
+      WHERE key IN ('system_name', 'system_subtitle', 'system_logo', 'footer_text', 'contact_email', 'contact_phone', 'company_address')
+    `).all();
+
+    const publicSettings: any = {};
+    settings.results?.forEach((setting: any) => {
+      publicSettings[setting.key] = setting.value;
+    });
+
+    // 如果没有设置，返回默认值
+    if (Object.keys(publicSettings).length === 0) {
+      publicSettings.system_name = 'CPrice 物流价格系统';
+      publicSettings.system_subtitle = '专业的货运代理物流服务平台';
+      publicSettings.footer_text = '© 2024 CPrice 物流. 保留所有权利.';
+      publicSettings.contact_email = 'contact@cprice.com';
+      publicSettings.contact_phone = '400-123-4567';
+      publicSettings.company_address = '中国上海市浦东新区';
+    }
+
+    return c.json({ success: true, data: publicSettings });
+  } catch (error) {
+    console.error('Error fetching public settings:', error);
+    return c.json({ success: false, error: 'Failed to fetch public settings' }, 500);
   }
 });
 
@@ -268,6 +318,7 @@ app.route('/api/inquiries', inquiryRoutes);
 app.route('/api/announcements', announcementRoutes);
 app.route('/api/business-types', businessTypeRoutes);
 app.route('/api/users', userRoutes);
+app.route('/api/settings', settingsRoutes);
 
 // 404处理
 app.notFound((c) => {
