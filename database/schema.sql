@@ -147,7 +147,7 @@ INSERT INTO permissions (id, module, action, description) VALUES
 
 -- 默认管理员用户 (密码: admin123)
 INSERT INTO users (id, username, email, password_hash, role) VALUES
-('user_001', 'admin', 'admin@cprice.com', '$2b$10$rQZ8kHp0rQZ8kHp0rQZ8kOp0rQZ8kHp0rQZ8kHp0rQZ8kHp0rQZ8k', 'admin');
+('user_001', 'admin', 'admin@cprice.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin');
 
 -- 为管理员分配所有权限
 INSERT INTO user_permissions (user_id, permission_id)

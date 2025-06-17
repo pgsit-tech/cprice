@@ -33,6 +33,93 @@ app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// 数据库初始化端点（仅用于调试）
+app.post('/init-db', async (c) => {
+  try {
+    // 检查是否已有数据
+    const existingData = await c.env.DB.prepare('SELECT COUNT(*) as count FROM business_types').first();
+    if (existingData && existingData.count > 0) {
+      return c.json({ success: true, message: 'Database already initialized', count: existingData.count });
+    }
+
+    // 插入默认业务类型
+    const businessTypes = [
+      { id: 'bt_001', name: '海运', code: 'SEA', description: '海运货物运输服务' },
+      { id: 'bt_002', name: '空运', code: 'AIR', description: '航空货物运输服务' },
+      { id: 'bt_003', name: 'FBA', code: 'FBA', description: 'Amazon FBA头程服务' },
+      { id: 'bt_004', name: '卡派', code: 'TRUCK', description: '卡车派送服务' },
+      { id: 'bt_005', name: '卡航', code: 'TRUCK_AIR', description: '卡车+航空联运服务' }
+    ];
+
+    for (const bt of businessTypes) {
+      await c.env.DB.prepare(`
+        INSERT OR REPLACE INTO business_types (id, name, code, description)
+        VALUES (?, ?, ?, ?)
+      `).bind(bt.id, bt.name, bt.code, bt.description).run();
+    }
+
+    // 插入默认权限
+    const permissions = [
+      { id: 'perm_001', module: 'dashboard', action: 'view', description: '查看仪表板' },
+      { id: 'perm_002', module: 'prices', action: 'view', description: '查看价格' },
+      { id: 'perm_003', module: 'prices', action: 'create', description: '创建价格' },
+      { id: 'perm_004', module: 'prices', action: 'update', description: '更新价格' },
+      { id: 'perm_005', module: 'prices', action: 'delete', description: '删除价格' },
+      { id: 'perm_006', module: 'prices', action: 'export', description: '导出价格' },
+      { id: 'perm_007', module: 'inquiries', action: 'view', description: '查看咨询' },
+      { id: 'perm_008', module: 'inquiries', action: 'update', description: '更新咨询' },
+      { id: 'perm_009', module: 'inquiries', action: 'export', description: '导出咨询' },
+      { id: 'perm_010', module: 'announcements', action: 'view', description: '查看公告' },
+      { id: 'perm_011', module: 'announcements', action: 'create', description: '创建公告' },
+      { id: 'perm_012', module: 'announcements', action: 'update', description: '更新公告' },
+      { id: 'perm_013', module: 'announcements', action: 'delete', description: '删除公告' },
+      { id: 'perm_014', module: 'business_types', action: 'view', description: '查看业务类型' },
+      { id: 'perm_015', module: 'business_types', action: 'create', description: '创建业务类型' },
+      { id: 'perm_016', module: 'business_types', action: 'update', description: '更新业务类型' },
+      { id: 'perm_017', module: 'business_types', action: 'delete', description: '删除业务类型' },
+      { id: 'perm_018', module: 'users', action: 'view', description: '查看用户' },
+      { id: 'perm_019', module: 'users', action: 'create', description: '创建用户' },
+      { id: 'perm_020', module: 'users', action: 'update', description: '更新用户' },
+      { id: 'perm_021', module: 'users', action: 'delete', description: '删除用户' }
+    ];
+
+    for (const perm of permissions) {
+      await c.env.DB.prepare(`
+        INSERT OR REPLACE INTO permissions (id, module, action, description)
+        VALUES (?, ?, ?, ?)
+      `).bind(perm.id, perm.module, perm.action, perm.description).run();
+    }
+
+    // 插入默认管理员用户
+    const adminPasswordHash = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
+    await c.env.DB.prepare(`
+      INSERT OR REPLACE INTO users (id, username, email, password_hash, role)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind('user_001', 'admin', 'admin@cprice.com', adminPasswordHash, 'admin').run();
+
+    // 为管理员分配所有权限
+    for (const perm of permissions) {
+      await c.env.DB.prepare(`
+        INSERT OR REPLACE INTO user_permissions (user_id, permission_id)
+        VALUES (?, ?)
+      `).bind('user_001', perm.id).run();
+    }
+
+    return c.json({
+      success: true,
+      message: 'Database initialized successfully',
+      data: {
+        businessTypes: businessTypes.length,
+        permissions: permissions.length,
+        adminUser: 1
+      }
+    });
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    return c.json({ success: false, error: 'Failed to initialize database', details: error.message }, 500);
+  }
+});
+
 // 公开路由（不需要认证）
 app.route('/api/auth', authRoutes);
 
