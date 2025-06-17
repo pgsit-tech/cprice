@@ -64,7 +64,7 @@ async function initializeDatabase() {
   try {
     console.log('📡 调用数据库初始化API...');
     const response = await makeRequest(`${API_BASE_URL}/init-db`, {
-      method: 'POST'
+      method: 'GET'
     });
     
     console.log(`📊 响应状态: ${response.status}`);

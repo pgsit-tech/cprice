@@ -33,8 +33,8 @@ app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 数据库初始化端点（仅用于调试）
-app.post('/init-db', async (c) => {
+// 数据库初始化端点（仅用于调试，不需要认证）
+app.get('/init-db', async (c) => {
   try {
     // 检查是否已有数据
     const existingData = await c.env.DB.prepare('SELECT COUNT(*) as count FROM business_types').first();
