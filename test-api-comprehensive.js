@@ -9,7 +9,7 @@ const https = require('https');
 const http = require('http');
 
 // 配置
-const API_BASE_URL = 'https://cprice-api-dev.20990909.xyz';
+const API_BASE_URL = 'https://cprice-api.20990909.xyz';
 const ADMIN_CREDENTIALS = {
   username: 'admin',
   password: 'admin123'
