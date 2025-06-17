@@ -9,7 +9,8 @@ import {
   TrashIcon,
   EyeIcon,
   FunnelIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
 
 interface Price {
@@ -50,6 +51,8 @@ export default function PricesPage() {
   const [selectedPriceType, setSelectedPriceType] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -167,6 +170,129 @@ export default function PricesPage() {
     );
   };
 
+  // 导出价格数据
+  const handleExportPrices = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+
+      const params = new URLSearchParams({
+        format: 'csv',
+        ...(selectedBusinessType && { businessType: selectedBusinessType }),
+        ...(selectedPriceType && { priceType: selectedPriceType })
+      });
+
+      const response = await fetch(`${apiUrl}/api/prices/export/data?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `prices_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const data = await response.json();
+        alert(data.error || '导出失败');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('导出失败，请重试');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // 导入价格数据
+  const handleImportPrices = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      alert('请选择CSV文件');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+
+      if (lines.length < 2) {
+        alert('CSV文件格式不正确');
+        return;
+      }
+
+      // 解析CSV数据
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+        if (values.length >= 7) { // 至少需要基本字段
+          data.push({
+            businessTypeCode: values[1] || '', // 业务类型代码
+            origin: values[2] || '',
+            destination: values[3] || '',
+            priceType: values[4] === '成本价' ? 'cost' : 'public',
+            price: parseFloat(values[5]) || 0,
+            currency: values[6] || 'CNY',
+            unit: values[7] || '',
+            validFrom: values[8] || new Date().toISOString().split('T')[0],
+            validTo: values[9] || null,
+            description: values[10] || ''
+          });
+        }
+      }
+
+      if (data.length === 0) {
+        alert('没有找到有效的数据行');
+        return;
+      }
+
+      // 发送到API
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+
+      const response = await fetch(`${apiUrl}/api/prices/import/data`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ data }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert(result.message || '导入成功');
+          fetchPrices(); // 刷新列表
+        } else {
+          alert(result.error || '导入失败');
+        }
+      } else {
+        const data = await response.json();
+        alert(data.error || '导入失败');
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('导入失败，请检查文件格式');
+    } finally {
+      setImporting(false);
+      // 清空文件输入
+      event.target.value = '';
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -194,11 +320,31 @@ export default function PricesPage() {
               <PlusIcon className="h-5 w-5 mr-2" />
               创建价格
             </button>
+
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportPrices}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={importing}
+              />
+              <button
+                disabled={importing}
+                className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center disabled:opacity-50"
+              >
+                <DocumentArrowUpIcon className="h-5 w-5 mr-2" />
+                {importing ? '导入中...' : '导入数据'}
+              </button>
+            </div>
+
             <button
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+              onClick={handleExportPrices}
+              disabled={exporting}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50"
             >
               <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
-              导出数据
+              {exporting ? '导出中...' : '导出数据'}
             </button>
           </div>
         </div>

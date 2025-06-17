@@ -10,6 +10,7 @@ import {
   MegaphoneIcon,
   TagIcon,
   UserGroupIcon,
+  CogIcon,
   Bars3Icon,
   XMarkIcon,
   ArrowRightOnRectangleIcon,
@@ -27,6 +28,7 @@ const navigation = [
   { name: '公告管理', href: '/admin/announcements', icon: MegaphoneIcon },
   { name: '业务类型', href: '/admin/business-types', icon: TagIcon },
   { name: '用户管理', href: '/admin/users', icon: UserGroupIcon },
+  { name: '系统设置', href: '/admin/settings', icon: CogIcon },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {

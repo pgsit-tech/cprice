@@ -44,6 +44,7 @@ export default function InquiriesPage() {
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [exporting, setExporting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -150,6 +151,47 @@ export default function InquiriesPage() {
     });
   };
 
+  // 导出咨询数据
+  const handleExportInquiries = async () => {
+    setExporting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cprice-api.itsupport-5c8.workers.dev';
+
+      const params = new URLSearchParams({
+        format: 'csv',
+        ...(selectedStatus && { status: selectedStatus }),
+        ...(selectedBusinessType && { businessType: selectedBusinessType })
+      });
+
+      const response = await fetch(`${apiUrl}/api/inquiries/export/data?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inquiries_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        const data = await response.json();
+        alert(data.error || '导出失败');
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('导出失败，请重试');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -171,10 +213,12 @@ export default function InquiriesPage() {
           </div>
           <div className="flex space-x-3">
             <button
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+              onClick={handleExportInquiries}
+              disabled={exporting}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50"
             >
               <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
-              导出数据
+              {exporting ? '导出中...' : '导出数据'}
             </button>
           </div>
         </div>
