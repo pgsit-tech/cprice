@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # 环境变量
 [vars]
-CORS_ORIGIN = "http://localhost:3000,https://cprice.pages.dev,http://192.168.1.5:3000,https://cprice.pgs-log.cn,https://f9104eaa.cprice.pages.dev"
+CORS_ORIGIN = "http://localhost:3000,https://cprice.pgs-log.cn"
 
 # 生产环境密钥（需要通过wrangler secret命令设置）
 # wrangler secret put JWT_SECRET
