@@ -27,7 +27,7 @@ settingsRoutes.get('/', async (c) => {
     `).all();
     
     // 转换为键值对格式
-    const settingsMap: any = {};
+    let settingsMap: any = {};
     settings.results?.forEach((setting: any) => {
       settingsMap[setting.key] = {
         value: setting.value,
@@ -36,7 +36,7 @@ settingsRoutes.get('/', async (c) => {
         updated_at: setting.updated_at
       };
     });
-    
+
     // 如果没有设置，返回默认值
     if (Object.keys(settingsMap).length === 0) {
       settingsMap = {
